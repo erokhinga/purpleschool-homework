@@ -1,4 +1,3 @@
-"use strict";
 // Домашнее задание по основным типам [3.14]
 let TEN = 10;
 let ONE_HUNDRED = 100;
@@ -107,3 +106,4 @@ function generateWords(num, words) {
     return generateWords(remainder, resWords);
 }
 console.log(toWords(111111));
+export {};
