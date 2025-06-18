@@ -15,11 +15,10 @@ type DiffKeys<T, U> = Exclude<keyof T, keyof U>;
 
 type TypeDiffKeys = DiffKeys<IA, IB>
 
-function difference<T, U>(obj1: T, obj2: U): Pick<T, DiffKeys<T, U>> {
+function difference<T extends object, U extends object>(obj1: T, obj2: U): Pick<T, DiffKeys<T, U>> {
     const diff: Partial<T> = {};
 
     for (const key in obj1) {
-        // if (!(key in obj2) || obj1[key] !== obj2[key]) {
         if (!(key in obj2)) {
             diff[key] = obj1[key];
         }
