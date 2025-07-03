@@ -1,3 +1,6 @@
+// ДЗ 5.20 Классы
+// на проверку
+
 class CustomHashMap {
 	private buckets: { key: string, value: number }[][]
 	private size: number
