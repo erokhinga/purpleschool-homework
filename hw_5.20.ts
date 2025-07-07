@@ -1,16 +1,23 @@
 // ДЗ 5.20 Классы
 // на проверку
 
-class CustomHashMap {
-	private buckets: { key: string, value: number }[][]
-	private size: number
+type Entry = {
+	key: string
+	value: number
+	next?: Entry
+};
 
-	constructor(bucketCount: number = 16) {
-		this.buckets = new Array(bucketCount)
-		for (let i = 0; i < bucketCount; i++) {
-			this.buckets[i] = []
-		}
+class CustomHashMap {
+	private buckets: (Entry | undefined)[]
+	private size: number
+	private loadFactor: number
+	private threshold: number
+
+	constructor(initialCapacity: number = 16, loadFactor: number = 0.75) {
+		this.buckets = new Array(initialCapacity)
 		this.size = 0
+		this.loadFactor = loadFactor
+		this.threshold = Math.floor(initialCapacity * loadFactor)
 	}
 
 	// размер мапы
@@ -22,61 +29,103 @@ class CustomHashMap {
 	private hashFunction(key: string): number {
 		let hash = 0
 		for (let i = 0; i < key.length; i++) {
-			hash = (hash * 31 + key.charCodeAt(i)) >>> 0 // неотрицательное целое число
+			hash = (hash * 31 + key.charCodeAt(i)) >>> 0   // неотрицательное целое число
 		}
-		return hash % this.buckets.length;
+		return hash
+	}
+
+	private getBucketIndex(key: any): number {
+		const hash = this.hashFunction(key)
+		return hash % this.buckets.length
+	}
+
+	private isNeedResize(): boolean {
+		return this.size >= this.threshold
+	}
+
+	private resize(): void {
+		const newCapacity = this.buckets.length * 2
+		const newBuckets: Entry[] = new Array(newCapacity)
+
+		for (const entry of this.buckets) {
+			let current = entry
+			while (current) {
+				const index = this.hashFunction(current.key) % newCapacity
+				const newEntry: Entry = {
+					key: current.key,
+					value: current.value,
+					next: newBuckets[index],
+				};
+				newBuckets[index] = newEntry
+				current = current.next
+			}
+		}
+
+		this.buckets = newBuckets
+		this.threshold = Math.floor(newCapacity * this.loadFactor)
 	}
 
 	// добавление ключ-значений
-	public add(key: string, value: number): void {
-		const index = this.hashFunction(key)
-		const bucket = this.buckets[index]
+	add(key: string, value: number): void {
+		const index = this.getBucketIndex(key)
+		let current = this.buckets[index]
 
-		// проверяем есть ли уже такой ключ (тогда обновлем значение)
-		for (let item of bucket) {
-			if (item.key === key) {
-				item.value = value
+		while (current) {
+			if (current.key === key) {
+				current.value = value
 				return;
 			}
+			current = current.next
 		}
 
-		bucket.push({ key, value })
-		this.size++;
+		const newEntry: Entry = {key, value, next: this.buckets[index]}
+		this.buckets[index] = newEntry
+		this.size++
+
+		if (this.isNeedResize()) {
+			this.resize()
+		}
 	}
 
 	// получение значений по ключу
-	public get(key: string): number | undefined {
-		const index = this.hashFunction(key)
-		const bucket = this.buckets[index]
+	get(key: string): number | undefined {
+		const index = this.getBucketIndex(key)
+		let current = this.buckets[index]
 
-		for (let item of bucket) {
-			if (item.key === key) {
-				return item.value
+		while (current) {
+			if (current.key === key) {
+				return current.value
 			}
+			current = current.next
 		}
 		return undefined;
 	}
 
 	// удаление ключ-значений
-	public delete(key: string): boolean {
-		const index = this.hashFunction(key)
-		const bucket = this.buckets[index]
+	delete(key: string): boolean {
+		const index = this.getBucketIndex(key)
+		let current = this.buckets[index]
+		let prev: Entry | undefined
 
-		for (let i = 0; i < bucket.length; i++) {
-			if (bucket[i].key === key) {
-				bucket.splice(i, 1)
+		while (current) {
+			if (current.key === key) {
+				if (prev) {
+					prev.next = current.next;
+				} else {
+					this.buckets[index] = current.next;
+				}
 				this.size--
 				return true
 			}
+			prev = current
+			current = current.next
 		}
-		return false;
+		return false
 	}
 
 	// очистка мапы
-	public clear(): void {
-		for (let bucket of this.buckets) {
-			bucket.length = 0
-		}
+	clear(): void {
+		this.buckets = new Array(this.buckets.length)
 		this.size = 0
 	}
 }
